@@ -69,3 +69,11 @@ func (*ColorServiceReporter) BeforeStart(service Service) {
 func (*ColorServiceReporter) AfterStart(service Service, err error) {
 	printError(err)
 }
+
+func (*ColorServiceReporter) BeforeStop(service Service) {
+	fmt.Printf(colorTitleL1, "Stopping ...")
+}
+
+func (*ColorServiceReporter) AfterStop(service Service, err error) {
+	printError(err)
+}

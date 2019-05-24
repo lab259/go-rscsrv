@@ -1,4 +1,4 @@
-package http
+package rscsrv
 
 import (
 	g "github.com/onsi/ginkgo"

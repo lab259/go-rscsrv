@@ -11,6 +11,9 @@ type ServiceStarterReporter interface {
 
 	BeforeStart(service Service)
 	AfterStart(service Service, err error)
+
+	BeforeStop(service Service)
+	AfterStop(service Service, err error)
 }
 
 type NopServiceReporter struct{}
@@ -29,14 +32,20 @@ func (*NopServiceReporter) BeforeStart(service Service) {}
 
 func (*NopServiceReporter) AfterStart(service Service, err error) {}
 
+func (*NopServiceReporter) BeforeStop(service Service) {}
+
+func (*NopServiceReporter) AfterStop(service Service, err error) {}
+
 type ServiceStarter struct {
 	services []Service
+	started  []Service
 	reporter ServiceStarterReporter
 }
 
 func NewServiceStarter(services []Service, reporter ServiceStarterReporter) *ServiceStarter {
 	return &ServiceStarter{
 		services: services,
+		started:  make([]Service, 0, len(services)),
 		reporter: reporter,
 	}
 }
@@ -64,6 +73,26 @@ func (engineStarter *ServiceStarter) Start() error {
 		if err != nil {
 			return err
 		}
+
+		engineStarter.started = append([]Service{srv}, engineStarter.started...)
+	}
+
+	return nil
+}
+
+func (engineStarter *ServiceStarter) Stop(keepGoing bool) error {
+	for len(engineStarter.started) > 0 {
+		srv := engineStarter.started[0]
+		engineStarter.reporter.BeforeBegin(srv)
+
+		engineStarter.reporter.BeforeStop(srv)
+		err := srv.Stop()
+		engineStarter.reporter.AfterStop(srv, err)
+		if err != nil && !keepGoing {
+			return err
+		}
+
+		engineStarter.started = engineStarter.started[1:]
 	}
 	return nil
 }

@@ -1,4 +1,4 @@
-package http
+package rscsrv
 
 import "encoding/json"
 

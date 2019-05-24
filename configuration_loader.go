@@ -1,4 +1,4 @@
-package http
+package rscsrv
 
 // ConfigurationLoader defines the contract to load a configuration
 // from a repository.

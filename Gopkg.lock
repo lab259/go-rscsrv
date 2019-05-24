@@ -24,6 +24,14 @@
   revision = "a1dbeea552b7c8df4b542c66073e393de198a800"
 
 [[projects]]
+  branch = "master"
+  digest = "1:8b28915d30e068b130e2c86a725d41e8c221cdcb4307c69e67bdc3cf9aabd286"
+  name = "github.com/jamillosantos/macchiato"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "3be045cc503344c551700381369b71cf18ca80cf"
+
+[[projects]]
   digest = "1:c658e84ad3916da105a761660dcaeb01e63416c8ec7bc62256a9b411a05fcd67"
   name = "github.com/mattn/go-colorable"
   packages = ["."]
@@ -163,7 +171,9 @@
   analyzer-version = 1
   input-imports = [
     "github.com/fatih/color",
+    "github.com/jamillosantos/macchiato",
     "github.com/onsi/ginkgo",
+    "github.com/onsi/ginkgo/reporters",
     "github.com/onsi/gomega",
     "gopkg.in/yaml.v2",
   ]

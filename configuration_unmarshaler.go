@@ -1,4 +1,4 @@
-package http
+package rscsrv
 
 // ConfigurationUnmarshaler describes the unmarshaling contract of a configuration.
 type ConfigurationUnmarshaler interface {

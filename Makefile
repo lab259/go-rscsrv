@@ -4,13 +4,26 @@ GOPATHCMD=GOPATH=$(GOPATH)
 COVERDIR=$(CURDIR)/.cover
 COVERAGEFILE=$(COVERDIR)/cover.out
 
+EXAMPLES=$(shell ls ./examples/)
+
 .PHONY: run dep-ensure dep-update vet test test-watch coverage coverage-ci coverage-html
+
+run:
+	@$(GOPATHCMD) go run examples/$(EXAMPLE)/main.go
+
+build:
+	@test -d ./examples && $(foreach example,$(EXAMPLES),$(GOPATHCMD) go build "-ldflags=$(LDFLAGS)" -o ./bin/$(example) -v ./examples/$(example) &&) :
 
 dep-ensure:
 	@$(GOPATHCMD) dep ensure -v $(PACKAGE)
 
 dep-update:
+ifdef $PACKAGE
 	@$(GOPATHCMD) dep update -v $(PACKAGE)
+else
+	@echo "Usage: PACKAGE=<package url> make dep-update"
+	@echo "The environment variable \`PACKAGE\` is not defined."
+endif
 
 vet:
 	@$(GOPATHCMD) go vet ./...
