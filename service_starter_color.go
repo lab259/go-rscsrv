@@ -35,7 +35,7 @@ func (*ColorServiceReporter) BeforeBegin(service Service) {
 
 const colorTitleL1 string = "    %-27s"
 
-func (*ColorServiceReporter) BeforeLoadConfiguration(service Service) {
+func (*ColorServiceReporter) BeforeLoadConfiguration(service Configurable) {
 	fmt.Printf(colorTitleL1, "Loading configuration ...")
 }
 
@@ -50,30 +50,30 @@ func printError(err error) {
 	fmt.Printf("[%s]\n", t)
 }
 
-func (*ColorServiceReporter) AfterLoadConfiguration(service Service, conf interface{}, err error) {
+func (*ColorServiceReporter) AfterLoadConfiguration(service Configurable, conf interface{}, err error) {
 	printError(err)
 }
 
-func (*ColorServiceReporter) BeforeApplyConfiguration(service Service) {
+func (*ColorServiceReporter) BeforeApplyConfiguration(service Configurable) {
 	fmt.Printf(colorTitleL1, "Applying configuration ...")
 }
 
-func (*ColorServiceReporter) AfterApplyConfiguration(service Service, conf interface{}, err error) {
+func (*ColorServiceReporter) AfterApplyConfiguration(service Configurable, conf interface{}, err error) {
 	printError(err)
 }
 
-func (*ColorServiceReporter) BeforeStart(service Service) {
+func (*ColorServiceReporter) BeforeStart(service Startable) {
 	fmt.Printf(colorTitleL1, "Starting ...")
 }
 
-func (*ColorServiceReporter) AfterStart(service Service, err error) {
+func (*ColorServiceReporter) AfterStart(service Startable, err error) {
 	printError(err)
 }
 
-func (*ColorServiceReporter) BeforeStop(service Service) {
+func (*ColorServiceReporter) BeforeStop(service Startable) {
 	fmt.Printf(colorTitleL1, "Stopping ...")
 }
 
-func (*ColorServiceReporter) AfterStop(service Service, err error) {
+func (*ColorServiceReporter) AfterStop(service Startable, err error) {
 	printError(err)
 }
