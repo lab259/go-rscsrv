@@ -1,6 +1,7 @@
-package rscsrv
+package rscsrv_test
 
 import (
+	rscsrv "github.com/lab259/go-rscsrv"
 	g "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -18,14 +19,14 @@ var _ = g.Describe("ConfigurationLoaderFile", func() {
 		fname := path.Join(dir, id)
 		ioutil.WriteFile(fname, []byte("this is a file"), 0777)
 
-		loader := NewFileConfigurationLoader(dir)
+		loader := rscsrv.NewFileConfigurationLoader(dir)
 		buff, err := loader.Load(id)
 		Expect(err).To(BeNil())
 		Expect(string(buff)).To(Equal("this is a file"))
 	})
 
 	g.It("should fail unmarshaling a malformed JSON", func() {
-		loader := NewFileConfigurationLoader("a non existing folder")
+		loader := rscsrv.NewFileConfigurationLoader("a non existing folder")
 		buff, err := loader.Load("a non existing file")
 		Expect(err).NotTo(BeNil())
 		Expect(buff).To(BeNil())

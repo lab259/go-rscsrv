@@ -1,0 +1,35 @@
+version: 2
+
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:1.12
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - deps-v1-{{ .Branch }}-{{ checksum "go.sum" }}
+            - deps-v1-{{ .Branch }}-
+            - deps-v1-
+      - run:
+          name: Setup .netrc
+          command: |
+            echo "machine github.com" > $HOME/.netrc
+            echo "    login $GITHUB_USERNAME" >> $HOME/.netrc
+            echo "    password $GITHUB_TOKEN" >> $HOME/.netrc
+      - run:
+          name: Installing Ginkgo
+          command: go get -u github.com/onsi/ginkgo/ginkgo
+      - run:
+          name: Run tests
+          command: make coverage-ci
+      - run:
+          name: Build examples
+          command: make build
+      - run: bash <(curl -s https://codecov.io/bash)
+      - save_cache:
+          key: deps-v1-{{ .Branch }}-{{ checksum "go.sum" }}
+          paths:
+            - /go/pkg/mod
+      - store_test_results:
+          path: test-results
