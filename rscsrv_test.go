@@ -3,6 +3,8 @@ package rscsrv_test
 import (
 	"log"
 	"os"
+	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/jamillosantos/macchiato"
@@ -19,9 +21,11 @@ func TestRscsrv(t *testing.T) {
 	if os.Getenv("CI") == "" {
 		macchiato.RunSpecs(t, description)
 	} else {
-		reporterOutputDir := "./test-results"
+		projectRoot, _ := os.Getwd()
+		project := filepath.Base(projectRoot)
+		reporterOutputDir := path.Join(projectRoot, "test-results", project)
 		os.MkdirAll(reporterOutputDir, os.ModePerm)
-		junitReporter := reporters.NewJUnitReporter("./test-results/go-rscsrv.xml")
+		junitReporter := reporters.NewJUnitReporter(path.Join(reporterOutputDir, "results.xml"))
 		macchiatoReporter := macchiato.NewReporter()
 		ginkgo.RunSpecsWithCustomReporters(t, description, []ginkgo.Reporter{macchiatoReporter, junitReporter})
 	}

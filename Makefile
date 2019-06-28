@@ -1,45 +1,38 @@
-GOPATH=$(CURDIR)/../../../../
-GOPATHCMD=GOPATH=$(GOPATH)
-
 COVERDIR=$(CURDIR)/.cover
 COVERAGEFILE=$(COVERDIR)/cover.out
 
 EXAMPLES=$(shell ls ./examples/)
 
-.PHONY: run dep-ensure dep-update vet test test-watch coverage coverage-ci coverage-html
+$(EXAMPLES): %:
+	$(eval EXAMPLE=$*)
+	@:
 
 run:
-	@$(GOPATHCMD) go run examples/$(EXAMPLE)/main.go
+	@if [ ! -z "$(EXAMPLE)" ]; then \
+		go run ./examples/$(EXAMPLE); \
+	else \
+		echo "Usage: make [$(EXAMPLES)] run"; \
+		echo "The environment variable \`EXAMPLE\` is not defined."; \
+	fi
 
 build:
-	@test -d ./examples && $(foreach example,$(EXAMPLES),$(GOPATHCMD) go build "-ldflags=$(LDFLAGS)" -o ./bin/$(example) -v ./examples/$(example) &&) :
-
-dep-ensure:
-	@$(GOPATHCMD) dep ensure -v $(PACKAGE)
-
-dep-update:
-ifdef $PACKAGE
-	@$(GOPATHCMD) dep update -v $(PACKAGE)
-else
-	@echo "Usage: PACKAGE=<package url> make dep-update"
-	@echo "The environment variable \`PACKAGE\` is not defined."
-endif
+	@test -d ./examples && $(foreach example,$(EXAMPLES),go build "-ldflags=$(LDFLAGS)" -o ./bin/$(example) -v ./examples/$(example) &&) :
 
 vet:
-	@$(GOPATHCMD) go vet ./...
+	@go vet ./...
 
 fmt:
-	@$(GOPATHCMD) gofmt -e -s *.go
+	@go fmt ./...
 
 test:
-	@${GOPATHCMD} ginkgo --failFast ./...
+	@ginkgo --failFast ./...
 
 test-watch:
-	@${GOPATHCMD} ginkgo watch -cover -r ./...
+	@ginkgo watch -cover -r ./...
 
 coverage-ci:
 	@mkdir -p $(COVERDIR)
-	@${GOPATHCMD} ginkgo -r -covermode=count --cover --trace ./
+	@ginkgo -r -covermode=count --cover --trace ./
 	@echo "mode: count" > "${COVERAGEFILE}"
 	@find . -type f -name *.coverprofile -exec grep -h -v "^mode:" {} >> "${COVERAGEFILE}" \; -exec rm -f {} \;
 
@@ -48,5 +41,7 @@ coverage: coverage-ci
 	@cp "${COVERAGEFILE}" coverage.txt
 
 coverage-html: coverage
-	@$(GOPATHCMD) go tool cover -html="${COVERAGEFILE}" -o .cover/report.html
+	@go tool cover -html="${COVERAGEFILE}" -o .cover/report.html
 	@xdg-open .cover/report.html 2> /dev/null > /dev/null
+
+.PHONY: $(EXAMPLES) run build vet fmt test test-watch coverage-ci coverage coverage-html
