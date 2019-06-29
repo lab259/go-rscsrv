@@ -3,9 +3,10 @@ package rscsrv_test
 import (
 	"errors"
 
-	rscsrv "github.com/lab259/go-rscsrv"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/lab259/go-rscsrv"
 )
 
 type countEngineReporter struct {
@@ -24,35 +25,35 @@ func (reporter *countEngineReporter) BeforeBegin(service rscsrv.Service) {
 	reporter.countBeforeBegin++
 }
 
-func (reporter *countEngineReporter) BeforeLoadConfiguration(service rscsrv.Service) {
+func (reporter *countEngineReporter) BeforeLoadConfiguration(service rscsrv.Configurable) {
 	reporter.countBeforeLoadConfiguration++
 }
 
-func (reporter *countEngineReporter) AfterLoadConfiguration(service rscsrv.Service, conf interface{}, err error) {
+func (reporter *countEngineReporter) AfterLoadConfiguration(service rscsrv.Configurable, conf interface{}, err error) {
 	reporter.countAfterLoadConfiguration++
 }
 
-func (reporter *countEngineReporter) BeforeApplyConfiguration(service rscsrv.Service) {
+func (reporter *countEngineReporter) BeforeApplyConfiguration(service rscsrv.Configurable) {
 	reporter.countBeforeApplyConfiguration++
 }
 
-func (reporter *countEngineReporter) AfterApplyConfiguration(service rscsrv.Service, conf interface{}, err error) {
+func (reporter *countEngineReporter) AfterApplyConfiguration(service rscsrv.Configurable, conf interface{}, err error) {
 	reporter.countAfterApplyConfiguration++
 }
 
-func (reporter *countEngineReporter) BeforeStart(service rscsrv.Service) {
+func (reporter *countEngineReporter) BeforeStart(service rscsrv.Startable) {
 	reporter.countBeforeStart++
 }
 
-func (reporter *countEngineReporter) AfterStart(service rscsrv.Service, err error) {
+func (reporter *countEngineReporter) AfterStart(service rscsrv.Startable, err error) {
 	reporter.countAfterStart++
 }
 
-func (reporter *countEngineReporter) BeforeStop(service rscsrv.Service) {
+func (reporter *countEngineReporter) BeforeStop(service rscsrv.Startable) {
 	reporter.countBeforeStop++
 }
 
-func (reporter *countEngineReporter) AfterStop(service rscsrv.Service, err error) {
+func (reporter *countEngineReporter) AfterStop(service rscsrv.Startable, err error) {
 	reporter.countAfterStop++
 }
 
@@ -91,11 +92,9 @@ func (service *MockService) Stop() error {
 var _ = Describe("ServiceStarter", func() {
 	It("should start all service", func() {
 		reporter := &countEngineReporter{}
-		engineStarter := rscsrv.NewServiceStarter([]rscsrv.Service{
-			&MockService{},
-		}, reporter)
+		engineStarter := rscsrv.NewServiceStarter(reporter, &MockService{})
 		err := engineStarter.Start()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 		Expect(reporter.countBeforeBegin).To(Equal(1))
 		Expect(reporter.countBeforeLoadConfiguration).To(Equal(1))
 		Expect(reporter.countAfterLoadConfiguration).To(Equal(1))
@@ -109,11 +108,12 @@ var _ = Describe("ServiceStarter", func() {
 
 	It("should stop all service", func() {
 		reporter := &countEngineReporter{}
-		engineStarter := rscsrv.NewServiceStarter([]rscsrv.Service{
+		engineStarter := rscsrv.NewServiceStarter(
+			reporter,
 			&MockService{},
-		}, reporter)
+		)
 		err := engineStarter.Start()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 		Expect(reporter.countBeforeBegin).To(Equal(1))
 		Expect(reporter.countBeforeLoadConfiguration).To(Equal(1))
 		Expect(reporter.countAfterLoadConfiguration).To(Equal(1))
@@ -131,13 +131,14 @@ var _ = Describe("ServiceStarter", func() {
 
 	It("should fail stopping service and return error", func() {
 		reporter := &countEngineReporter{}
-		engineStarter := rscsrv.NewServiceStarter([]rscsrv.Service{
+		engineStarter := rscsrv.NewServiceStarter(
+			reporter,
 			&MockService{
 				errStop: errors.New("stopping error"),
 			},
-		}, reporter)
+		)
 		err := engineStarter.Start()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 		Expect(reporter.countBeforeBegin).To(Equal(1))
 		Expect(reporter.countBeforeLoadConfiguration).To(Equal(1))
 		Expect(reporter.countAfterLoadConfiguration).To(Equal(1))
@@ -157,13 +158,14 @@ var _ = Describe("ServiceStarter", func() {
 
 	It("should fail stopping service and keep going", func() {
 		reporter := &countEngineReporter{}
-		engineStarter := rscsrv.NewServiceStarter([]rscsrv.Service{
+		engineStarter := rscsrv.NewServiceStarter(
+			reporter,
 			&MockService{
 				errStop: errors.New("stopping error"),
 			},
-		}, reporter)
+		)
 		err := engineStarter.Start()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 		Expect(reporter.countBeforeBegin).To(Equal(1))
 		Expect(reporter.countBeforeLoadConfiguration).To(Equal(1))
 		Expect(reporter.countAfterLoadConfiguration).To(Equal(1))
@@ -182,11 +184,12 @@ var _ = Describe("ServiceStarter", func() {
 
 	It("should fail loading configuration", func() {
 		reporter := &countEngineReporter{}
-		engineStarter := rscsrv.NewServiceStarter([]rscsrv.Service{
+		engineStarter := rscsrv.NewServiceStarter(
+			reporter,
 			&MockService{
 				errLoadingConfiguration: errors.New("loading configuration error"),
 			},
-		}, reporter)
+		)
 		err := engineStarter.Start()
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("loading configuration error"))
@@ -203,11 +206,12 @@ var _ = Describe("ServiceStarter", func() {
 
 	It("should fail applying configuration", func() {
 		reporter := &countEngineReporter{}
-		engineStarter := rscsrv.NewServiceStarter([]rscsrv.Service{
+		engineStarter := rscsrv.NewServiceStarter(
+			reporter,
 			&MockService{
 				errApplyConfiguration: errors.New("applying configuration error"),
 			},
-		}, reporter)
+		)
 		err := engineStarter.Start()
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("applying configuration error"))

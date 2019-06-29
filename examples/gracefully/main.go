@@ -7,7 +7,7 @@ import (
 	"syscall"
 	"time"
 
-	rscsrv "github.com/lab259/go-rscsrv"
+	"github.com/lab259/go-rscsrv"
 )
 
 type Service2 struct {
@@ -54,10 +54,11 @@ func main() {
 
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	serviceStarter := rscsrv.NewServiceStarter([]rscsrv.Service{
+	serviceStarter := rscsrv.NewServiceStarter(
+		&rscsrv.ColorServiceReporter{},
 		&Service1{},
 		&Service2{},
-	}, &rscsrv.ColorServiceReporter{})
+	)
 	serviceStarter.Start()
 
 	go func() {

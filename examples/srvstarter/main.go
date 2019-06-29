@@ -3,7 +3,7 @@ package main
 import (
 	"time"
 
-	rscsrv "github.com/lab259/go-rscsrv"
+	"github.com/lab259/go-rscsrv"
 )
 
 type Service1 struct{}
@@ -36,8 +36,9 @@ func (*Service1) Stop() error {
 }
 
 func main() {
-	serviceStarter := rscsrv.NewServiceStarter([]rscsrv.Service{
+	serviceStarter := rscsrv.NewServiceStarter(
+		&rscsrv.ColorServiceReporter{},
 		&Service1{},
-	}, &rscsrv.ColorServiceReporter{})
+	)
 	serviceStarter.Start()
 }
