@@ -5,11 +5,10 @@
 > Resource/Service pattern for Go applications.
 
 ```go
-serviceStarter := rscsrv.NewServiceStarter([]rscsrv.Service{
-	&Service1,
-	&Service2,
-	&Service3,
-}, &rscsrv.ColorServiceReporter{})
+serviceStarter := rscsrv.NewServiceStarter(
+	&rscsrv.ColorServiceReporter{},  // First, the reporter
+	&Service1, &Service2, &Service3, // Here all services that should be started.
+)
 
 err := serviceStarter.Start()
 if err != nil {
