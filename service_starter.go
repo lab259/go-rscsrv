@@ -1,41 +1,15 @@
 package rscsrv
 
-type ServiceStarterReporter interface {
-	BeforeBegin(service Service)
-
-	BeforeLoadConfiguration(service Configurable)
-	AfterLoadConfiguration(service Configurable, conf interface{}, err error)
-
-	BeforeApplyConfiguration(service Configurable)
-	AfterApplyConfiguration(service Configurable, conf interface{}, err error)
-
-	BeforeStart(service Startable)
-	AfterStart(service Startable, err error)
-
-	BeforeStop(service Startable)
-	AfterStop(service Startable, err error)
+// ServiceStarter is an abtraction for service starter which is responsible
+// for starting and stopping services.
+//
+// See Also
+//
+// `NewServiceStarter`, `DefaultServiceStarter`
+type ServiceStarter interface {
+	Start() error
+	Stop(keepGoing bool) error
 }
-
-type NopStarterReporter struct{}
-
-func (*NopStarterReporter) BeforeBegin(service Service) {}
-
-func (*NopStarterReporter) BeforeLoadConfiguration(service Configurable) {}
-
-func (*NopStarterReporter) AfterLoadConfiguration(service Configurable, conf interface{}, err error) {}
-
-func (*NopStarterReporter) BeforeApplyConfiguration(service Configurable) {}
-
-func (*NopStarterReporter) AfterApplyConfiguration(service Configurable, conf interface{}, err error) {
-}
-
-func (*NopStarterReporter) BeforeStart(service Startable) {}
-
-func (*NopStarterReporter) AfterStart(service Startable, err error) {}
-
-func (*NopStarterReporter) BeforeStop(service Startable) {}
-
-func (*NopStarterReporter) AfterStop(service Startable, err error) {}
 
 type serviceStarter struct {
 	services []Service
@@ -43,8 +17,14 @@ type serviceStarter struct {
 	reporter ServiceStarterReporter
 }
 
-// NewServiceStarter returns a new instace of a `starter`.
-func NewServiceStarter(reporter ServiceStarterReporter, services ...Service) *serviceStarter {
+// DefaultServiceStarter returns a default ServiceStarter integrated
+// with the ColorServiceReporter.
+func DefaultServiceStarter(services ...Service) ServiceStarter {
+	return NewServiceStarter(&ColorServiceReporter{}, services...)
+}
+
+// NewServiceStarter returns a new instace of a `ServiceStarter`.
+func NewServiceStarter(reporter ServiceStarterReporter, services ...Service) ServiceStarter {
 	return &serviceStarter{
 		services: services,
 		started:  make([]Startable, 0, len(services)),
@@ -58,7 +38,7 @@ func (engineStarter *serviceStarter) Start() error {
 	for _, srv := range engineStarter.services {
 		engineStarter.reporter.BeforeBegin(srv)
 
-		// If the service is Loadible, starts loading the configuration.
+		// If the service is Configurable, starts loading the configuration.
 		if configurable, ok := srv.(Configurable); ok {
 			engineStarter.reporter.BeforeLoadConfiguration(configurable)
 
@@ -78,7 +58,7 @@ func (engineStarter *serviceStarter) Start() error {
 			engineStarter.reporter.AfterApplyConfiguration(configurable, conf, err)
 		}
 
-		// If the service is startable, tries to start the service.
+		// If the service is Startable, tries to start the service.
 		if startable, ok := srv.(Startable); ok {
 			engineStarter.reporter.BeforeStart(startable)
 			err := startable.Start()
@@ -109,7 +89,8 @@ func (engineStarter *serviceStarter) Stop(keepGoing bool) error {
 			return err
 		}
 
-		engineStarter.started = engineStarter.started[1:] // Removes the service from the list of started services.
+		// Removes the service from the list of started services.
+		engineStarter.started = engineStarter.started[1:]
 	}
 	return nil
 }

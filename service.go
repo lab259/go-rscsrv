@@ -12,7 +12,7 @@ var (
 	ErrServiceNotRunning = errors.New("service not running")
 )
 
-// Nameable abstracts the precense of a the name in a possible `Startable` or
+// Service abstracts the precense of a the name in a possible `Startable` or
 // `Configurable`.
 type Service interface {
 	// Name identifies the service.
@@ -23,10 +23,7 @@ type Service interface {
 // restarted and stopped.
 type Startable interface {
 	Service
-	startable
-}
 
-type startable interface {
 	// Restarts the service. If successful nil will be returned, otherwise the
 	// error.
 	Restart() error
@@ -42,10 +39,7 @@ type startable interface {
 
 type Configurable interface {
 	Service
-	configurable
-}
 
-type configurable interface {
 	// Loads the configuration. If successful nil will be returned, otherwise
 	// the error.
 	LoadConfiguration() (interface{}, error)
