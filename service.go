@@ -22,8 +22,6 @@ type Service interface {
 // Startable is an abtraction for implementing parts that can be started,
 // restarted and stopped.
 type Startable interface {
-	Service
-
 	// Restarts the service. If successful nil will be returned, otherwise the
 	// error.
 	Restart() error
@@ -38,8 +36,6 @@ type Startable interface {
 }
 
 type Configurable interface {
-	Service
-
 	// Loads the configuration. If successful nil will be returned, otherwise
 	// the error.
 	LoadConfiguration() (interface{}, error)

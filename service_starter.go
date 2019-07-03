@@ -13,21 +13,27 @@ type ServiceStarter interface {
 
 type serviceStarter struct {
 	services []Service
-	started  []Startable
+	started  []Service
 	reporter ServiceStarterReporter
 }
 
 // DefaultServiceStarter returns a default ServiceStarter integrated
-// with the ColorServiceReporter.
+// with the ColorStarterReporter.
 func DefaultServiceStarter(services ...Service) ServiceStarter {
-	return NewServiceStarter(&ColorServiceReporter{}, services...)
+	return NewServiceStarter(&ColorStarterReporter{}, services...)
+}
+
+// QuietServiceStarter returns a default ServiceStarter integrated
+// with the NopStarterReporter.
+func QuietServiceStarter(services ...Service) ServiceStarter {
+	return NewServiceStarter(&NopStarterReporter{}, services...)
 }
 
 // NewServiceStarter returns a new instace of a `ServiceStarter`.
 func NewServiceStarter(reporter ServiceStarterReporter, services ...Service) ServiceStarter {
 	return &serviceStarter{
 		services: services,
-		started:  make([]Startable, 0, len(services)),
+		started:  make([]Service, 0, len(services)),
 		reporter: reporter,
 	}
 }
@@ -69,7 +75,7 @@ func (engineStarter *serviceStarter) Start() error {
 
 			// Prepend the service to the list of started services.
 			// The order is reverse to get the resources unallocated in the reverse order as they started.
-			engineStarter.started = append([]Startable{startable}, engineStarter.started...)
+			engineStarter.started = append([]Service{srv}, engineStarter.started...)
 		}
 	}
 
@@ -82,11 +88,14 @@ func (engineStarter *serviceStarter) Stop(keepGoing bool) error {
 		srv := engineStarter.started[0]
 		engineStarter.reporter.BeforeBegin(srv)
 
-		engineStarter.reporter.BeforeStop(srv)
-		err := srv.Stop()
-		engineStarter.reporter.AfterStop(srv, err)
-		if err != nil && !keepGoing {
-			return err
+		// If the service is Startable, tries to stop the service.
+		if startable, ok := srv.(Startable); ok {
+			engineStarter.reporter.BeforeStop(startable)
+			err := startable.Stop()
+			engineStarter.reporter.AfterStop(startable, err)
+			if err != nil && !keepGoing {
+				return err
+			}
 		}
 
 		// Removes the service from the list of started services.

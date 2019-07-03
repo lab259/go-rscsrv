@@ -54,8 +54,7 @@ func main() {
 
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	serviceStarter := rscsrv.NewServiceStarter(
-		&rscsrv.ColorServiceReporter{},
+	serviceStarter := rscsrv.DefaultServiceStarter(
 		&Service1{},
 		&Service2{},
 	)

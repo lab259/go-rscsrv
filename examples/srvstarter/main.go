@@ -37,7 +37,7 @@ func (*Service1) Stop() error {
 
 func main() {
 	serviceStarter := rscsrv.NewServiceStarter(
-		&rscsrv.ColorServiceReporter{},
+		&rscsrv.ColorStarterReporter{},
 		&Service1{},
 	)
 	serviceStarter.Start()
