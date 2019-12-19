@@ -14,7 +14,7 @@ type retrierMockReporter struct {
 	count int
 }
 
-func (reporter *retrierMockReporter) Error(err error) error {
+func (reporter *retrierMockReporter) ReportRetrier(retrier *rscsrv.StartRetrier, err error) error {
 	if err != nil {
 		reporter.count++
 	}
@@ -366,6 +366,33 @@ var _ = Describe("StartRetrier", func() {
 			)
 			Expect(engineStarter.Start()).To(Succeed())
 			Expect(service.startCount).To(Equal(5))
+		})
+	})
+
+	Context("Stop", func() {
+		It("should cancel stop the service while waiting the delay between tries", func() {
+			// The retrier have timeout of 1 second.
+			// The service fails after 150 milliseconds.
+			// The retrier waits 250 milliseconds to try again.
+			// The retrier gets cancelled before the above timeout finishes.
+			// An ErrStartCancelled is returned.
+
+			service := &retrierMockService{
+				startDelay: time.Millisecond * 150,
+				successAt:  2,
+			}
+
+			retrier := rscsrv.NewStartRetrier(service, rscsrv.StartRetrierOptions{
+				Timeout:           time.Second,
+				DelayBetweenTries: time.Millisecond * 250, // If not defined, it will wait 5 seconds default...
+			})
+
+			go func() {
+				time.Sleep(time.Millisecond * 200)
+				Expect(retrier.Stop()).To(Succeed())
+			}()
+			Expect(retrier.Start()).To(Equal(rscsrv.ErrStartCancelled))
+			Expect(service.startCount).To(Equal(1))
 		})
 	})
 })

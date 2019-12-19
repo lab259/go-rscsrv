@@ -20,7 +20,7 @@ type serviceStarter struct {
 // DefaultServiceStarter returns a default ServiceStarter integrated
 // with the ColorStarterReporter.
 func DefaultServiceStarter(services ...Service) ServiceStarter {
-	return NewServiceStarter(&ColorStarterReporter{}, services...)
+	return NewServiceStarter(DefaultColorStarterReporter, services...)
 }
 
 // QuietServiceStarter returns a default ServiceStarter integrated

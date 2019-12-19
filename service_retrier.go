@@ -1,6 +1,7 @@
 package rscsrv
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"time"
@@ -24,18 +25,24 @@ var (
 	ErrStartCancelled = errors.New("start cancelled by a stop")
 )
 
-type startRetrierReporter interface {
-	// Error receives an error handles it. Then, the same error should be
-	// returned. This is useful for logging and if some special logic error
-	// handling.
-	Error(err error) error
+type StartRetrierReporter interface {
+	// ReportRetrier is called whenever a service is started or not. If the
+	// service is successfully started, err will be nil, otherwise not.
+	ReportRetrier(retrier *StartRetrier, err error) error
+}
+
+// FuncStartRetrierReporter is a wrapper for retrier reporters.
+type FuncStartRetrierReporter func(service Service, err error) error
+
+func (fnc FuncStartRetrierReporter) ReportRetrier(retrier *StartRetrier, err error) error {
+	return fnc(retrier, err)
 }
 
 // NopStarRetrierReporter is a reporter with an empty implementation.
 type NopStarRetrierReporter struct{}
 
-// Error will just return the input param without doing anything.
-func (*NopStarRetrierReporter) Error(err error) error {
+// ReportRetrier will just return the input param without doing anything.
+func (*NopStarRetrierReporter) ReportRetrier(service Service, err error) error {
 	return err
 }
 
@@ -55,16 +62,19 @@ type StartRetrierOptions struct {
 	Timeout time.Duration
 
 	// Reporter configures a receiver for all start errors that might happen.
-	Reporter startRetrierReporter
+	Reporter StartRetrierReporter
 }
 
 // StartRetrier is a helper that implements retrying start the service.
 type StartRetrier struct {
 	Service
-	starting     bool
-	startingM    sync.Mutex
-	startingDone chan bool
-	options      StartRetrierOptions
+	starting      bool
+	startingM     sync.Mutex
+	startingDone  chan bool
+	ctx           context.Context
+	ctxCancelFunc context.CancelFunc
+	options       StartRetrierOptions
+	Try           int
 }
 
 // NewStartRetrier configures
@@ -72,9 +82,15 @@ func NewStartRetrier(service Service, options StartRetrierOptions) *StartRetrier
 	if options.DelayBetweenTries == 0 {
 		options.DelayBetweenTries = 5 * time.Second
 	}
+	if options.Reporter == nil {
+		options.Reporter = DefaultColorStarterReporter
+	}
+	ctx, cancelFunc := context.WithCancel(context.Background())
 	return &StartRetrier{
-		Service: service,
-		options: options,
+		Service:       service,
+		options:       options,
+		ctx:           ctx,
+		ctxCancelFunc: cancelFunc,
 	}
 }
 
@@ -82,6 +98,17 @@ func NewStartRetrier(service Service, options StartRetrierOptions) *StartRetrier
 func Retrier(options StartRetrierOptions) func(Service) *StartRetrier {
 	return func(s Service) *StartRetrier {
 		return NewStartRetrier(s, options)
+	}
+}
+
+// Retriers creates a 2nd order function to conveniently wrap `Service`s.
+func Retriers(options StartRetrierOptions) func(...Service) []Service {
+	return func(services ...Service) []Service {
+		r := make([]Service, len(services))
+		for i, service := range services {
+			r[i] = NewStartRetrier(service, options)
+		}
+		return r
 	}
 }
 
@@ -114,7 +141,7 @@ func (retrier *StartRetrier) Start() error {
 
 	startedAt := time.Now()
 
-	try := 0
+	retrier.Try = 0
 	retrier.setStarting(true)
 	for retrier.getStarting() {
 		err := func() (err error) {
@@ -129,13 +156,13 @@ func (retrier *StartRetrier) Start() error {
 					err = ErrUnknownPanic
 				}
 				if retrier.options.Reporter != nil { // If we have a reporter, report the error
-					err = retrier.options.Reporter.Error(err)
+					err = retrier.options.Reporter.ReportRetrier(retrier, err)
 				}
 			}()
 
 			err = startable.Start()
 			if retrier.options.Reporter != nil { // If we have a reporter, report the error
-				err = retrier.options.Reporter.Error(err)
+				err = retrier.options.Reporter.ReportRetrier(retrier, err)
 			}
 			return
 		}()
@@ -143,10 +170,10 @@ func (retrier *StartRetrier) Start() error {
 			return nil
 		}
 
-		try++
+		retrier.Try++
 
 		// If there is a maximum number of tries defined and it was reached ...
-		if retrier.options.MaxTries > 0 && retrier.options.MaxTries <= try {
+		if retrier.options.MaxTries > 0 && retrier.options.MaxTries <= retrier.Try {
 			return ErrMaxTriesExceeded
 		}
 
@@ -156,7 +183,12 @@ func (retrier *StartRetrier) Start() error {
 		}
 
 		// Waits a little bit
-		time.Sleep(retrier.options.DelayBetweenTries)
+		select {
+		case <-time.After(retrier.options.DelayBetweenTries):
+			continue
+		case <-retrier.ctx.Done():
+			break
+		}
 	}
 	return ErrStartCancelled
 }
@@ -170,6 +202,7 @@ func (retrier *StartRetrier) Stop() error {
 	}
 
 	if retrier.getStarting() {
+		retrier.ctxCancelFunc()
 		retrier.setStarting(false)
 		<-retrier.startingDone
 		return nil
