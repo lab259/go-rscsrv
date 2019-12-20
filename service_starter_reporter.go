@@ -9,9 +9,9 @@ type ServiceStarterReporter interface {
 	BeforeApplyConfiguration(service Configurable)
 	AfterApplyConfiguration(service Configurable, conf interface{}, err error)
 
-	BeforeStart(service Startable)
-	AfterStart(service Startable, err error)
+	BeforeStart(service Service)
+	AfterStart(service Service, err error)
 
-	BeforeStop(service Startable)
-	AfterStop(service Startable, err error)
+	BeforeStop(service Service)
+	AfterStop(service Service, err error)
 }

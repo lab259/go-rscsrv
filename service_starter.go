@@ -1,5 +1,9 @@
 package rscsrv
 
+import (
+	"context"
+)
+
 // ServiceStarter is an abtraction for service starter which is responsible
 // for starting and stopping services.
 //
@@ -12,9 +16,13 @@ type ServiceStarter interface {
 }
 
 type serviceStarter struct {
-	services []Service
-	started  []Service
-	reporter ServiceStarterReporter
+	ctx        context.Context
+	cancelFunc context.CancelFunc
+
+	startDoneCh chan bool
+	services    []Service
+	started     []Service
+	reporter    ServiceStarterReporter
 }
 
 // DefaultServiceStarter returns a default ServiceStarter integrated
@@ -32,16 +40,32 @@ func QuietServiceStarter(services ...Service) ServiceStarter {
 // NewServiceStarter returns a new instace of a `ServiceStarter`.
 func NewServiceStarter(reporter ServiceStarterReporter, services ...Service) ServiceStarter {
 	return &serviceStarter{
-		services: services,
-		started:  make([]Service, 0, len(services)),
-		reporter: reporter,
+		startDoneCh: make(chan bool),
+		services:    services,
+		started:     make([]Service, 0, len(services)),
+		reporter:    reporter,
 	}
 }
 
 // Start will go through all provided services trying to load and/or start them.
 func (engineStarter *serviceStarter) Start() error {
+	engineStarter.ctx, engineStarter.cancelFunc = context.WithCancel(context.Background())
+	defer func() {
+		close(engineStarter.startDoneCh)
+		engineStarter.cancelFunc()
+	}()
+
 	// Iterate through all services
 	for _, srv := range engineStarter.services {
+		// Ensure the context is not cancelled:
+		select {
+		case <-engineStarter.ctx.Done():
+			// Broadcast the start is done...
+			return engineStarter.ctx.Err()
+		default:
+			// Not cancelled ... everything must go on.
+		}
+
 		engineStarter.reporter.BeforeBegin(srv)
 
 		// If the service is Configurable, starts loading the configuration.
@@ -64,35 +88,51 @@ func (engineStarter *serviceStarter) Start() error {
 			engineStarter.reporter.AfterApplyConfiguration(configurable, conf, err)
 		}
 
-		// If the service is Startable, tries to start the service.
-		if startable, ok := srv.(Startable); ok {
-			engineStarter.reporter.BeforeStart(startable)
-			err := startable.Start()
-			engineStarter.reporter.AfterStart(startable, err)
-			if err != nil {
-				return err
-			}
-
-			// Prepend the service to the list of started services.
-			// The order is reverse to get the resources unallocated in the reverse order as they started.
-			engineStarter.started = append([]Service{srv}, engineStarter.started...)
+		var err error
+		switch startable := srv.(type) {
+		case StartableWithContext:
+			// If the service is Startable, tries to start the service.
+			engineStarter.reporter.BeforeStart(srv)
+			err = startable.StartWithContext(engineStarter.ctx)
+		case Startable:
+			// If the service is Startable, tries to start the service.
+			engineStarter.reporter.BeforeStart(srv)
+			err = startable.Start()
+		default:
+			continue
 		}
-	}
 
+		engineStarter.reporter.AfterStart(srv, err)
+		if err != nil {
+			return err
+		}
+		// Prepend the service to the list of started services.
+		// The order is reverse to get the resources unallocated in the reverse order as they started.
+		engineStarter.started = append([]Service{srv}, engineStarter.started...)
+	}
+	select {
+	case <-engineStarter.ctx.Done():
+		// Broadcast the start is done...
+		return engineStarter.ctx.Err()
+	default:
+		// Not cancelled ... everything must go on.
+	}
 	return nil
 }
 
 // Stop will stop all started "startable" services.
 func (engineStarter *serviceStarter) Stop(keepGoing bool) error {
+	if engineStarter.ctx != nil {
+		engineStarter.cancelFunc()
+		<-engineStarter.startDoneCh
+	}
 	for len(engineStarter.started) > 0 {
 		srv := engineStarter.started[0]
-		engineStarter.reporter.BeforeBegin(srv)
-
-		// If the service is Startable, tries to stop the service.
-		if startable, ok := srv.(Startable); ok {
-			engineStarter.reporter.BeforeStop(startable)
-			err := startable.Stop()
-			engineStarter.reporter.AfterStop(startable, err)
+		// If the service is Stoppable, tries to stop the service.
+		if stoppable, ok := srv.(Stoppable); ok {
+			engineStarter.reporter.BeforeStop(srv)
+			err := stoppable.Stop()
+			engineStarter.reporter.AfterStop(srv, err)
 			if err != nil && !keepGoing {
 				return err
 			}
