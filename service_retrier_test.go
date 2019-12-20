@@ -74,7 +74,6 @@ func (service *retrierMockPanicService) Start() error {
 		p = errors.New("panicked error")
 	}
 	panic(p)
-	return nil
 }
 
 func (service *retrierMockPanicService) Stop() error {
