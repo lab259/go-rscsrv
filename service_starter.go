@@ -149,6 +149,8 @@ func (engineStarter *serviceStarter) Stop(keepGoing bool) error {
 
 	for len(engineStarter.started) > 0 {
 		srv := engineStarter.started[0]
+		engineStarter.reporter.BeforeBegin(srv)
+
 		// If the service is Stoppable, tries to stop the service.
 		if stoppable, ok := srv.(Stoppable); ok {
 			engineStarter.reporter.BeforeStop(srv)

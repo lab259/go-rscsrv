@@ -61,7 +61,7 @@ func (reporter *ColorStarterReporter) AfterLoadConfiguration(service Configurabl
 }
 
 func (reporter *ColorStarterReporter) BeforeApplyConfiguration(service Configurable) {
-	fmt.Printf(colorTitleL1, "Applying configuration ...\n")
+	reporter.printL1f("Applying configuration ...")
 }
 
 func (reporter *ColorStarterReporter) AfterApplyConfiguration(service Configurable, conf interface{}, err error) {
@@ -69,7 +69,7 @@ func (reporter *ColorStarterReporter) AfterApplyConfiguration(service Configurab
 }
 
 func (reporter *ColorStarterReporter) BeforeStart(service Service) {
-	fmt.Printf(colorTitleL1, "Starting ...")
+	reporter.printL1f("Starting ...")
 }
 
 func (reporter *ColorStarterReporter) AfterStart(service Service, err error) {
