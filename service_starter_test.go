@@ -382,7 +382,7 @@ var _ = Describe("ServiceStarter", func() {
 			time.Sleep(time.Millisecond * 25)
 			Expect(engineStarter.Stop(true)).To(Succeed())
 
-			Expect(reporter.countBeforeBegin).To(Equal(2))
+			Expect(reporter.countBeforeBegin).To(Equal(1))
 			Expect(reporter.countBeforeLoadConfiguration).To(Equal(1))
 			Expect(reporter.countAfterLoadConfiguration).To(Equal(1))
 			Expect(reporter.countBeforeApplyConfiguration).To(Equal(1))
