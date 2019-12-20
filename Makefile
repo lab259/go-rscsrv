@@ -21,6 +21,9 @@ build:
 vet:
 	@go vet ./...
 
+sc:
+	@go run honnef.co/go/tools/cmd/staticcheck ./...
+
 fmt:
 	@go fmt ./...
 

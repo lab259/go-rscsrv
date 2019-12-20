@@ -313,7 +313,6 @@ var _ = Describe("ServiceStarter", func() {
 			time.Sleep(time.Millisecond * 50)
 			Expect(engineStarter.Stop(true)).To(Succeed())
 
-			Expect(reporter.countBeforeBegin).To(Equal(3))
 			Expect(reporter.countBeforeLoadConfiguration).To(Equal(3))
 			Expect(reporter.countAfterLoadConfiguration).To(Equal(3))
 			Expect(reporter.countBeforeApplyConfiguration).To(Equal(3))
@@ -346,7 +345,6 @@ var _ = Describe("ServiceStarter", func() {
 			time.Sleep(time.Millisecond * 50)
 			Expect(engineStarter.Stop(true)).To(Succeed())
 
-			Expect(reporter.countBeforeBegin).To(Equal(2))
 			Expect(reporter.countBeforeLoadConfiguration).To(Equal(2))
 			Expect(reporter.countAfterLoadConfiguration).To(Equal(2))
 			Expect(reporter.countBeforeApplyConfiguration).To(Equal(2))
@@ -385,7 +383,6 @@ var _ = Describe("ServiceStarter", func() {
 			time.Sleep(time.Millisecond * 25)
 			Expect(engineStarter.Stop(true)).To(Succeed())
 
-			Expect(reporter.countBeforeBegin).To(Equal(1))
 			Expect(reporter.countBeforeLoadConfiguration).To(Equal(1))
 			Expect(reporter.countAfterLoadConfiguration).To(Equal(1))
 			Expect(reporter.countBeforeApplyConfiguration).To(Equal(1))
@@ -424,7 +421,6 @@ var _ = Describe("ServiceStarter", func() {
 			time.Sleep(time.Millisecond * 50)
 			Expect(engineStarter.Stop(true)).To(Succeed())
 
-			Expect(reporter.countBeforeBegin).To(Equal(2))
 			Expect(reporter.countBeforeLoadConfiguration).To(Equal(2))
 			Expect(reporter.countAfterLoadConfiguration).To(Equal(2))
 			Expect(reporter.countBeforeApplyConfiguration).To(Equal(2))

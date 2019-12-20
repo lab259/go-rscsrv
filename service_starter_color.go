@@ -9,20 +9,14 @@ import (
 var (
 	colorSuccess   = color.New(color.FgGreen)
 	colorError     = color.New(color.FgRed)
-	colorWarning   = color.New(color.FgYellow)
 	colorHighlight = color.New(color.FgWhite, color.Bold)
-	colorMuted     = color.New(color.FgHiBlack)
-
-	colorBold = color.New(color.Bold)
 )
 
 // Success formats text as
 var (
 	formatSuccess   = colorSuccess.SprintfFunc()
 	formatError     = colorError.SprintfFunc()
-	formatWarning   = colorWarning.SprintfFunc()
 	formatHighlight = colorHighlight.SprintfFunc()
-	formatMuted     = colorMuted.SprintfFunc()
 
 	formatBold = colorSuccess.SprintfFunc()
 )

@@ -23,12 +23,6 @@ type MockService struct {
 	errStop                 error
 }
 
-type MockServiceWithCancellation struct {
-	MockService
-	ctx    context.Context
-	cancel context.CancelFunc
-}
-
 func (service *MockService) Name() string {
 	if service.name != "" {
 		return service.name
