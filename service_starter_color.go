@@ -29,51 +29,66 @@ var (
 
 type ColorStarterReporter struct{}
 
-func (*ColorStarterReporter) BeforeBegin(service Service) {
+var DefaultColorStarterReporter = &ColorStarterReporter{}
+
+const colorTitleL1 string = "    %-27s\n"
+
+func (reporter *ColorStarterReporter) printL1f(format string, args ...interface{}) {
+	fmt.Printf(colorTitleL1, fmt.Sprintf(format, args...))
+}
+
+func (reporter *ColorStarterReporter) BeforeBegin(service Service) {
 	fmt.Printf("%s\n", formatHighlight(service.Name()))
 }
 
-const colorTitleL1 string = "    %-27s"
-
-func (*ColorStarterReporter) BeforeLoadConfiguration(service Configurable) {
-	fmt.Printf(colorTitleL1, "Loading configuration ...")
+func (reporter *ColorStarterReporter) BeforeLoadConfiguration(service Configurable) {
+	reporter.printL1f("Loading configuration ...")
 }
 
-func printError(err error) {
+func (reporter *ColorStarterReporter) printError(err error) {
 	var t string
 	if err != nil {
-		t = formatBold(formatSuccess("Error"))
-		fmt.Printf("[%s]\n    %s\n", t, err.Error())
+		t = formatBold(formatError("Error"))
+		reporter.printL1f("> [%s]: %s", t, err)
 		return
 	}
 	t = formatBold(formatSuccess("OK"))
-	fmt.Printf("[%s]\n", t)
+	reporter.printL1f("> [%s]", t)
 }
 
-func (*ColorStarterReporter) AfterLoadConfiguration(service Configurable, conf interface{}, err error) {
-	printError(err)
+func (reporter *ColorStarterReporter) AfterLoadConfiguration(service Configurable, conf interface{}, err error) {
+	reporter.printError(err)
 }
 
-func (*ColorStarterReporter) BeforeApplyConfiguration(service Configurable) {
-	fmt.Printf(colorTitleL1, "Applying configuration ...")
+func (reporter *ColorStarterReporter) BeforeApplyConfiguration(service Configurable) {
+	fmt.Printf(colorTitleL1, "Applying configuration ...\n")
 }
 
-func (*ColorStarterReporter) AfterApplyConfiguration(service Configurable, conf interface{}, err error) {
-	printError(err)
+func (reporter *ColorStarterReporter) AfterApplyConfiguration(service Configurable, conf interface{}, err error) {
+	reporter.printError(err)
 }
 
-func (*ColorStarterReporter) BeforeStart(service Startable) {
+func (reporter *ColorStarterReporter) BeforeStart(service Startable) {
 	fmt.Printf(colorTitleL1, "Starting ...")
 }
 
-func (*ColorStarterReporter) AfterStart(service Startable, err error) {
-	printError(err)
+func (reporter *ColorStarterReporter) AfterStart(service Startable, err error) {
+	reporter.printError(err)
 }
 
-func (*ColorStarterReporter) BeforeStop(service Startable) {
-	fmt.Printf(colorTitleL1, "Stopping ...")
+func (reporter *ColorStarterReporter) BeforeStop(service Startable) {
+	reporter.printL1f("Stopping ...")
 }
 
-func (*ColorStarterReporter) AfterStop(service Startable, err error) {
-	printError(err)
+func (reporter *ColorStarterReporter) AfterStop(service Startable, err error) {
+	reporter.printError(err)
+}
+
+// ReportRetrier is called whenever a service is started or not. If the
+// service is successfully started, err will be nil, otherwise not.
+func (reporter *ColorStarterReporter) ReportRetrier(retrier *StartRetrier, err error) error {
+	if err != nil {
+		reporter.printL1f("Retrier > [%s]: Try %d: %s", formatError("Error"), retrier.Try+1, err)
+	}
+	return err
 }
