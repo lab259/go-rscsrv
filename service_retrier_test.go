@@ -74,7 +74,6 @@ func (service *retrierMockPanicService) Start() error {
 		p = errors.New("panicked error")
 	}
 	panic(p)
-	return nil
 }
 
 func (service *retrierMockPanicService) Stop() error {
@@ -378,7 +377,7 @@ var _ = Describe("StartRetrier", func() {
 	})
 
 	Context("Stop", func() {
-		It("should cancel stop the service while waiting the delay between tries", func() {
+		It("should cancel stop the service while waiting the delay between tries", func(done Done) {
 			// The retrier have timeout of 1 second.
 			// The service fails after 150 milliseconds.
 			// The retrier waits 250 milliseconds to try again.
@@ -399,9 +398,10 @@ var _ = Describe("StartRetrier", func() {
 			go func() {
 				time.Sleep(time.Millisecond * 200)
 				Expect(retrier.Stop()).To(Succeed())
+				close(done)
 			}()
 			Expect(retrier.Start()).To(Equal(rscsrv.ErrStartCancelled))
 			Expect(service.startCount).To(Equal(1))
-		})
+		}, 0.5)
 	})
 })

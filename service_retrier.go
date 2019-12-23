@@ -143,6 +143,7 @@ func (retrier *StartRetrier) Start() error {
 
 	retrier.Try = 0
 	retrier.setStarting(true)
+
 	for retrier.getStarting() {
 		err := func() (err error) {
 			defer func() {
@@ -187,7 +188,7 @@ func (retrier *StartRetrier) Start() error {
 		case <-time.After(retrier.options.DelayBetweenTries):
 			continue
 		case <-retrier.ctx.Done():
-			break
+			return ErrStartCancelled
 		}
 	}
 	return ErrStartCancelled

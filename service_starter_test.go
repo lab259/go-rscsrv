@@ -7,6 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"go.uber.org/atomic"
 
 	"github.com/lab259/go-rscsrv"
 )
@@ -63,10 +64,11 @@ type MockService struct {
 	errLoadingConfiguration error
 	errApplyConfiguration   error
 	errRestart              error
-	started                 bool
+	started                 atomic.Bool
 	errStart                error
 	startDuration           time.Duration
-	stopped                 bool
+	stopped                 atomic.Bool
+	stopDuration            time.Duration
 	errStop                 error
 }
 
@@ -94,14 +96,15 @@ func (service *MockService) Restart() error {
 
 func (service *MockService) Start() error {
 	time.Sleep(service.startDuration)
-	service.started = true
-	service.stopped = false
+	service.started.Store(true)
+	service.stopped.Store(false)
 	return service.errStart
 }
 
 func (service *MockService) Stop() error {
-	service.started = false
-	service.stopped = true
+	service.started.Store(false)
+	service.stopped.Store(true)
+	time.Sleep(service.stopDuration)
 	return service.errStop
 }
 
@@ -310,7 +313,6 @@ var _ = Describe("ServiceStarter", func() {
 			time.Sleep(time.Millisecond * 50)
 			Expect(engineStarter.Stop(true)).To(Succeed())
 
-			Expect(reporter.countBeforeBegin).To(Equal(3))
 			Expect(reporter.countBeforeLoadConfiguration).To(Equal(3))
 			Expect(reporter.countAfterLoadConfiguration).To(Equal(3))
 			Expect(reporter.countBeforeApplyConfiguration).To(Equal(3))
@@ -343,7 +345,6 @@ var _ = Describe("ServiceStarter", func() {
 			time.Sleep(time.Millisecond * 50)
 			Expect(engineStarter.Stop(true)).To(Succeed())
 
-			Expect(reporter.countBeforeBegin).To(Equal(2))
 			Expect(reporter.countBeforeLoadConfiguration).To(Equal(2))
 			Expect(reporter.countAfterLoadConfiguration).To(Equal(2))
 			Expect(reporter.countBeforeApplyConfiguration).To(Equal(2))
@@ -352,10 +353,10 @@ var _ = Describe("ServiceStarter", func() {
 			Expect(reporter.countAfterStart).To(Equal(2))
 			Expect(reporter.countBeforeStop).To(Equal(1))
 			Expect(reporter.countAfterStop).To(Equal(1))
-			Expect(service1.started).To(BeFalse())
-			Expect(service2.started).To(BeFalse())
-			Expect(service1.stopped).To(BeTrue())
-			Expect(service2.stopped).To(BeFalse()) // Yes, its stop was never called...
+			Expect(service1.started.Load()).To(BeFalse())
+			Expect(service2.started.Load()).To(BeFalse())
+			Expect(service1.stopped.Load()).To(BeTrue())
+			Expect(service2.stopped.Load()).To(BeFalse()) // Yes, its stop was never called...
 		}()
 		err := engineStarter.Start()
 		Expect(err).To(HaveOccurred())
@@ -382,7 +383,6 @@ var _ = Describe("ServiceStarter", func() {
 			time.Sleep(time.Millisecond * 25)
 			Expect(engineStarter.Stop(true)).To(Succeed())
 
-			Expect(reporter.countBeforeBegin).To(Equal(1))
 			Expect(reporter.countBeforeLoadConfiguration).To(Equal(1))
 			Expect(reporter.countAfterLoadConfiguration).To(Equal(1))
 			Expect(reporter.countBeforeApplyConfiguration).To(Equal(1))
@@ -391,15 +391,15 @@ var _ = Describe("ServiceStarter", func() {
 			Expect(reporter.countAfterStart).To(Equal(1))
 			Expect(reporter.countBeforeStop).To(Equal(1))
 			Expect(reporter.countAfterStop).To(Equal(1))
-			Expect(service1.started).To(BeFalse())
-			Expect(service2.started).To(BeFalse())
-			Expect(service1.stopped).To(BeTrue())
-			Expect(service2.stopped).To(BeFalse()) // Yes, its stop was never called...
+			Expect(service1.started.Load()).To(BeFalse())
+			Expect(service2.started.Load()).To(BeFalse())
+			Expect(service1.stopped.Load()).To(BeTrue())
+			Expect(service2.stopped.Load()).To(BeFalse()) // Yes, its stop was never called...
 		}()
 		err := engineStarter.Start()
 		Expect(err).To(HaveOccurred())
 		Expect(err).To(Equal(context.Canceled))
-	})
+	}, 2)
 
 	It("should cancel the starting process after cancelling the start at the last non cancellable service", func() {
 		// Start service1 immediately;
@@ -421,7 +421,6 @@ var _ = Describe("ServiceStarter", func() {
 			time.Sleep(time.Millisecond * 50)
 			Expect(engineStarter.Stop(true)).To(Succeed())
 
-			Expect(reporter.countBeforeBegin).To(Equal(2))
 			Expect(reporter.countBeforeLoadConfiguration).To(Equal(2))
 			Expect(reporter.countAfterLoadConfiguration).To(Equal(2))
 			Expect(reporter.countBeforeApplyConfiguration).To(Equal(2))
@@ -430,13 +429,42 @@ var _ = Describe("ServiceStarter", func() {
 			Expect(reporter.countAfterStart).To(Equal(2))
 			Expect(reporter.countBeforeStop).To(Equal(2))
 			Expect(reporter.countAfterStop).To(Equal(2))
-			Expect(service1.started).To(BeFalse())
-			Expect(service2.started).To(BeFalse())
-			Expect(service1.stopped).To(BeTrue())
-			Expect(service2.stopped).To(BeTrue())
+			Expect(service1.started.Load()).To(BeFalse())
+			Expect(service2.started.Load()).To(BeFalse())
+			Expect(service1.stopped.Load()).To(BeTrue())
+			Expect(service2.stopped.Load()).To(BeTrue())
 		}()
 		err := engineStarter.Start()
 		Expect(err).To(HaveOccurred())
 		Expect(err).To(Equal(context.Canceled))
+	})
+
+	It("should wait the service starter to be finished", func() {
+		// Start service1 and service2;
+		// Stop the service starter;
+		// Services should take around 55 milliseconds to stop;
+		reporter := &countEngineReporter{}
+
+		service1 := &MockService{
+			stopDuration: time.Millisecond * 25,
+		}
+		service2 := &MockService{
+			stopDuration: time.Millisecond * 30,
+		}
+
+		engineStarter := rscsrv.NewServiceStarter(reporter, service1, service2)
+
+		err := engineStarter.Start()
+		Expect(err).ToNot(HaveOccurred())
+		go func() {
+			defer GinkgoRecover()
+
+			Expect(engineStarter.Stop(true)).To(Succeed())
+		}()
+		startedAt := time.Now()
+		engineStarter.Wait()
+		Expect(service1.stopped.Load()).To(BeTrue())
+		Expect(service2.stopped.Load()).To(BeTrue())
+		Expect(time.Since(startedAt).Seconds() * 1000).To(BeNumerically("~", 55, 10))
 	})
 })
