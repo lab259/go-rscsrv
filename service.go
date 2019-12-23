@@ -2,6 +2,8 @@ package rscsrv
 
 import "errors"
 
+import "context"
+
 var (
 	// ErrWrongConfigurationInformed is the error returned when a configuration
 	// object is loaded but it is not valid.
@@ -19,22 +21,30 @@ type Service interface {
 	Name() string
 }
 
-// Startable is an abtraction for implementing parts that can be started,
+// Startable is an abstraction for implementing parts that can be started,
 // restarted and stopped.
 type Startable interface {
-	// Restarts the service. If successful nil will be returned, otherwise the
-	// error.
-	Restart() error
-
 	// Start starts the service. If successful nil will be returned, otherwise
 	// the error.
 	Start() error
+}
 
+// Stoppable is an abstraction with the Stop behavior.
+type Stoppable interface {
 	// Stop stops the service. If successful nil will be returned, otherwise the
 	// error.
 	Stop() error
 }
 
+// StartableWithContext is an abstraction for implementing services that
+// can have its Start process cancelled.
+type StartableWithContext interface {
+	// StartWithContext starts the service with a context that can be cancelled.
+	StartWithContext(ctx context.Context) error
+}
+
+// Configurable is an abstraction for implement loading and applying
+// configuration.
 type Configurable interface {
 	// Loads the configuration. If successful nil will be returned, otherwise
 	// the error.

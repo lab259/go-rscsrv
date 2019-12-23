@@ -196,7 +196,7 @@ func (retrier *StartRetrier) Start() error {
 // Stop stops the provided service. If it still starting, the starting process
 // is cancelled.
 func (retrier *StartRetrier) Stop() error {
-	startable, ok := retrier.Service.(Startable)
+	stoppable, ok := retrier.Service.(Stoppable)
 	if !ok { // No need to do anything...
 		return nil
 	}
@@ -207,7 +207,7 @@ func (retrier *StartRetrier) Stop() error {
 		<-retrier.startingDone
 		return nil
 	}
-	return startable.Stop()
+	return stoppable.Stop()
 }
 
 // Restart restarts the provided service.

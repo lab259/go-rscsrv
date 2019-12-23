@@ -68,19 +68,19 @@ func (reporter *ColorStarterReporter) AfterApplyConfiguration(service Configurab
 	reporter.printError(err)
 }
 
-func (reporter *ColorStarterReporter) BeforeStart(service Startable) {
+func (reporter *ColorStarterReporter) BeforeStart(service Service) {
 	fmt.Printf(colorTitleL1, "Starting ...")
 }
 
-func (reporter *ColorStarterReporter) AfterStart(service Startable, err error) {
+func (reporter *ColorStarterReporter) AfterStart(service Service, err error) {
 	reporter.printError(err)
 }
 
-func (reporter *ColorStarterReporter) BeforeStop(service Startable) {
+func (reporter *ColorStarterReporter) BeforeStop(service Service) {
 	reporter.printL1f("Stopping ...")
 }
 
-func (reporter *ColorStarterReporter) AfterStop(service Startable, err error) {
+func (reporter *ColorStarterReporter) AfterStop(service Service, err error) {
 	reporter.printError(err)
 }
 

@@ -20,6 +20,28 @@ if err != nil {
 
 See [`/examples`](/examples) for more usage examples.
 
+## Service basics
+
+The `Service` is a interface that only provides:
+
+* Name(): `string`;
+
+But, it is the base of this library. Along side `Service` you must implement 
+`Startable`, `StartableWithContext` and/or `Stoppable`.
+
+## Startable
+
+Startable represent services that its start process cannot be cancelled.
+
+* Start(): `error`
+
+## StartableWithContext
+
+StartableWithContext provides the functionality for services that can have its
+start process aborted.
+
+* StartWithContext(`context.Context`) `error`;
+
 ## Retrier
 
 The `StartRetrier` is a mechanism that retries starting a `Service` when it

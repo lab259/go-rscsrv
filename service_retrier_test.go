@@ -156,6 +156,7 @@ var _ = Describe("StartRetrier", func() {
 
 		retrier := rscsrv.NewStartRetrier(service, rscsrv.StartRetrierOptions{
 			DelayBetweenTries: time.Millisecond, // If not defined, it will wait 5 seconds default...
+			Reporter:          &retrierMockReporter{},
 		})
 
 		engineStarter := rscsrv.NewServiceStarter(
@@ -182,6 +183,7 @@ var _ = Describe("StartRetrier", func() {
 			rscsrv.NewStartRetrier(service, rscsrv.StartRetrierOptions{
 				MaxTries:          5,
 				DelayBetweenTries: time.Millisecond, // If not defined, it will wait 5 seconds default...
+				Reporter:          &retrierMockReporter{},
 			}),
 		)
 		Expect(engineStarter.Start()).To(Succeed())
@@ -202,6 +204,7 @@ var _ = Describe("StartRetrier", func() {
 				rscsrv.NewStartRetrier(service, rscsrv.StartRetrierOptions{
 					MaxTries:          5,
 					DelayBetweenTries: time.Millisecond, // If not defined, it will wait 5 seconds default...
+					Reporter:          &retrierMockReporter{},
 				}),
 			)
 			Expect(engineStarter.Start()).To(Succeed())
@@ -270,6 +273,7 @@ var _ = Describe("StartRetrier", func() {
 				rscsrv.NewStartRetrier(service, rscsrv.StartRetrierOptions{
 					MaxTries:          5,
 					DelayBetweenTries: time.Millisecond, // If not defined, it will wait 5 seconds default...
+					Reporter:          &retrierMockReporter{},
 				}),
 			)
 			err := engineStarter.Start()
@@ -295,6 +299,7 @@ var _ = Describe("StartRetrier", func() {
 				rscsrv.NewStartRetrier(service, rscsrv.StartRetrierOptions{
 					Timeout:           time.Millisecond * 500,
 					DelayBetweenTries: time.Millisecond, // If not defined, it will wait 5 seconds default...
+					Reporter:          &retrierMockReporter{},
 				}),
 			)
 			Expect(engineStarter.Start()).To(Succeed())
@@ -317,6 +322,7 @@ var _ = Describe("StartRetrier", func() {
 				rscsrv.NewStartRetrier(service, rscsrv.StartRetrierOptions{
 					Timeout:           time.Millisecond * 500,
 					DelayBetweenTries: time.Millisecond, // If not defined, it will wait 5 seconds default...
+					Reporter:          &retrierMockReporter{},
 				}),
 			)
 			Expect(engineStarter.Start()).To(Succeed())
@@ -339,6 +345,7 @@ var _ = Describe("StartRetrier", func() {
 				rscsrv.NewStartRetrier(service, rscsrv.StartRetrierOptions{
 					Timeout:           time.Millisecond * 200,
 					DelayBetweenTries: time.Millisecond, // If not defined, it will wait 5 seconds default...
+					Reporter:          &retrierMockReporter{},
 				}),
 			)
 			Expect(engineStarter.Start()).To(Equal(rscsrv.ErrStartTimeout))
@@ -358,6 +365,7 @@ var _ = Describe("StartRetrier", func() {
 			retrier := rscsrv.Retrier(rscsrv.StartRetrierOptions{
 				MaxTries:          5,
 				DelayBetweenTries: time.Millisecond, // If not defined, it will wait 5 seconds default...
+				Reporter:          &retrierMockReporter{},
 			})
 
 			engineStarter := rscsrv.NewServiceStarter(
@@ -385,6 +393,7 @@ var _ = Describe("StartRetrier", func() {
 			retrier := rscsrv.NewStartRetrier(service, rscsrv.StartRetrierOptions{
 				Timeout:           time.Second,
 				DelayBetweenTries: time.Millisecond * 250, // If not defined, it will wait 5 seconds default...
+				Reporter:          &retrierMockReporter{},
 			})
 
 			go func() {
