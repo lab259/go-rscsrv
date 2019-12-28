@@ -22,16 +22,28 @@ func (reporter *retrierMockReporter) ReportRetrier(retrier *rscsrv.StartRetrier,
 }
 
 type retrierMockService struct {
-	startDelay time.Duration
-	startCount int
-	successAt  int
+	startDelay     time.Duration
+	startCount     int
+	successAt      int
+	loadConfCount  int
+	applyConfCount int
 }
 
 func (service *retrierMockService) Name() string {
 	return "retrierMockService"
 }
 
-func (service *retrierMockService) Restart() error {
+// Loads the configuration. If successful nil will be returned, otherwise
+// the error.
+func (service *retrierMockService) LoadConfiguration() (interface{}, error) {
+	service.loadConfCount++
+	return nil, nil
+}
+
+// Applies a given configuration object to the service. If successful nil
+// will be returned, otherwise the error.
+func (service *retrierMockService) ApplyConfiguration(_ interface{}) error {
+	service.applyConfCount++
 	return nil
 }
 
@@ -107,6 +119,8 @@ var _ = Describe("StartRetrier", func() {
 		)
 		Expect(engineStarter.Start()).To(Succeed())
 		Expect(service.startCount).To(Equal(1))
+		Expect(service.loadConfCount).To(Equal(1))
+		Expect(service.applyConfCount).To(Equal(1))
 		Expect(reporter.count).To(Equal(0))
 		Expect(engineStarter.Stop(true)).To(Succeed())
 	})
@@ -136,7 +150,7 @@ var _ = Describe("StartRetrier", func() {
 			defer GinkgoRecover()
 
 			time.Sleep(time.Millisecond * 150)
-			Expect(retrier.Stop()).To(Succeed())
+			Expect(retrier.(rscsrv.Stoppable).Stop()).To(Succeed())
 		}()
 		Expect(engineStarter.Start()).To(Equal(rscsrv.ErrStartCancelled))
 		Expect(service.startCount).To(Equal(2))
@@ -166,7 +180,7 @@ var _ = Describe("StartRetrier", func() {
 			defer GinkgoRecover()
 
 			time.Sleep(time.Millisecond * 150)
-			Expect(retrier.Stop()).To(Succeed())
+			Expect(retrier.(rscsrv.Stoppable).Stop()).To(Succeed())
 		}()
 		Expect(engineStarter.Start()).To(Equal(rscsrv.ErrStartCancelled))
 		Expect(service.startCount).To(Equal(2))
@@ -397,10 +411,10 @@ var _ = Describe("StartRetrier", func() {
 
 			go func() {
 				time.Sleep(time.Millisecond * 200)
-				Expect(retrier.Stop()).To(Succeed())
+				Expect(retrier.(rscsrv.Stoppable).Stop()).To(Succeed())
 				close(done)
 			}()
-			Expect(retrier.Start()).To(Equal(rscsrv.ErrStartCancelled))
+			Expect(retrier.(rscsrv.Startable).Start()).To(Equal(rscsrv.ErrStartCancelled))
 			Expect(service.startCount).To(Equal(1))
 		}, 0.5)
 	})
