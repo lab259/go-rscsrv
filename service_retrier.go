@@ -78,7 +78,7 @@ type StartRetrier struct {
 }
 
 // NewStartRetrier configures
-func NewStartRetrier(service Service, options StartRetrierOptions) *StartRetrier {
+func NewStartRetrier(service Service, options StartRetrierOptions) Service {
 	if options.DelayBetweenTries == 0 {
 		options.DelayBetweenTries = 5 * time.Second
 	}
@@ -86,17 +86,36 @@ func NewStartRetrier(service Service, options StartRetrierOptions) *StartRetrier
 		options.Reporter = DefaultColorStarterReporter
 	}
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	return &StartRetrier{
+
+	// Initialize the retrier...
+	retrier := &StartRetrier{
 		Service:       service,
 		options:       options,
 		ctx:           ctx,
 		ctxCancelFunc: cancelFunc,
 	}
+
+	// Check if the service is configurable...
+	configurable, isConfigurable := service.(Configurable)
+	if isConfigurable {
+		// If configurable, we must return an anonymous struct with a
+		// `Configurable` implemented....
+		return struct {
+			*StartRetrier
+			Configurable
+		}{
+			retrier,
+			configurable,
+		}
+	}
+
+	// Otherwise, just return the retrier
+	return retrier
 }
 
 // Retrier creates a 2nd order function to conveniently wrap `Service`s.
-func Retrier(options StartRetrierOptions) func(Service) *StartRetrier {
-	return func(s Service) *StartRetrier {
+func Retrier(options StartRetrierOptions) func(Service) Service {
+	return func(s Service) Service {
 		return NewStartRetrier(s, options)
 	}
 }
