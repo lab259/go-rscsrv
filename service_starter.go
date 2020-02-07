@@ -92,10 +92,10 @@ func (engineStarter *serviceStarter) Start() error {
 
 			// Applies the configuration to the service.
 			err = configurable.ApplyConfiguration(conf)
+			engineStarter.reporter.AfterApplyConfiguration(configurable, conf, err)
 			if err != nil {
 				return err
 			}
-			engineStarter.reporter.AfterApplyConfiguration(configurable, conf, err)
 		}
 
 		var err error
